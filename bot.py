@@ -126,14 +126,14 @@ def main():
     # 组合消息内容
     today = datetime.now().strftime("%Y年%m月%d日 %A")
     
-    message = f"""📅 {today}
+message = f"""{datetime.now().strftime('%m/%d')}
 ════════════════════
 
-{get_gold_price()}
+【黄金】{get_gold_price()}
 
-{get_exchange_rates()}
+【汇率】{get_exchange_rates()}
 
-{get_tech_news()}
+【新闻】{get_tech_news()}
 
 ════════════════════
 ⏰ 更新时间：{datetime.now().strftime("%H:%M")}
