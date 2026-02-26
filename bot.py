@@ -13,33 +13,45 @@ WECHAT_USERID = "oHh0G3Y5LKos7qEDyK-okZfGkpI0"  # 替换成你的WeChatID
 def get_gold_price():
     """获取黄金价格（人民币/克）"""
     try:
-        url = "https://api.metals.live/v1/spot/gold"
+        # 使用MetalpriceAPI（免费，无需API Key）
+        url = "https://api.metalpriceapi.com/v1/latest"
         response = requests.get(url)
         data = response.json()
         
-        gold_usd_per_oz = data['price']
-        
-        # 获取汇率
-        exchange_url = "https://api.exchangerate-api.com/v4/latest/USD"
-        exchange_resp = requests.get(exchange_url)
-        exchange_data = exchange_resp.json()
-        usd_to_cny = exchange_data['rates']['CNY']
-        
-        # 计算：美元/盎司 × 汇率 ÷ 31.1035 = 人民币/克
-        gold_cny_per_gram = (gold_usd_per_oz * usd_to_cny) / 31.1035
-        
-        return f"黄金: ¥{gold_cny_per_gram:.2f}/克"
+        if data.get('success') and 'rates' in data:
+            # 获取黄金价格（美元/盎司）
+            # API返回的是 "USDXAU (Gold)": 价格
+            gold_usd_per_oz = data['rates']['USDXAU (Gold)']
+            
+            # 获取汇率
+            exchange_url = "https://api.exchangerate-api.com/v4/latest/USD"
+            exchange_resp = requests.get(exchange_url)
+            exchange_data = exchange_resp.json()
+            usd_to_cny = exchange_data['rates']['CNY']
+            
+            # 计算：美元/盎司 × 汇率 ÷ 31.1035 = 人民币/克
+            gold_cny_per_gram = (gold_usd_per_oz * usd_to_cny) / 31.1035
+            
+            return f"黄金: {gold_cny_per_gram:.2f}元/克"
+        else:
+            return "黄金: 数据获取失败"
     except Exception as e:
         print(f"获取黄金价格失败: {str(e)}")
         return "黄金: 获取失败"
 
-def get_usd_to_cny():
-    """获取美元兑人民币汇率"""
+def get_exchange_rates():
+    """获取汇率信息（美元兑人民币 + 加元兑美元）"""
     try:
         url = "https://api.exchangerate-api.com/v4/latest/USD"
         response = requests.get(url)
         data = response.json()
-        return f"汇率: 1 USD = {data['rates']['CNY']:.4f} CNY"
+        
+        usd_to_cny = data['rates']['CNY']
+        cad_to_usd = data['rates']['CAD']
+        
+        return f"""汇率:
+1美元 = {usd_to_cny:.4f}人民币
+1加元 = {cad_to_usd:.4f}美元"""
     except Exception as e:
         print(f"获取汇率失败: {str(e)}")
         return "汇率: 获取失败"
@@ -64,6 +76,9 @@ def get_tech_news():
             for i, article in enumerate(data['articles'][:3], 1):
                 title = article['title']
                 url_link = article['url']
+                # 简化标题，去掉多余内容
+                if len(title) > 50:
+                    title = title[:50] + "..."
                 news_list.append(f"{i}. {title}\n   {url_link}")
             
             news_text = "\n\n".join(news_list)
@@ -128,14 +143,14 @@ def send_wechat_message(message):
 # ========== 主程序 ==========
 
 def main():
-    # 组合消息内容（去掉emoji，使用【】标签）
+    # 组合消息内容（纯中文，不使用emoji）
     today = datetime.now().strftime("%Y年%m月%d日")
     
     message = f"""【{today} 财经早报】
 
-【黄金】{get_gold_price()}
+{get_gold_price()}
 
-【汇率】{get_usd_to_cny()}
+{get_exchange_rates()}
 
 {get_tech_news()}
 
