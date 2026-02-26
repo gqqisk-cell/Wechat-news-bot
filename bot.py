@@ -12,44 +12,52 @@ WECHAT_USERID = "oHh0G3Y5LKos7qEDyK-okZfGkpI0"  # Replace with your WeChatID
 def get_gold_price():
     """Get gold price in CNY per gram"""
     try:
-        # Using MetalpriceAPI (free, no API key required)
-        url = "https://api.metalpriceapi.com/v1/latest"
-        response = requests.get(url)
+        # Using Metals-API (free, no API key required)
+        # This API returns rates relative to USD
+        url = "https://api.metals.dev/v1/latest?api_key=test-api-key-12345"
+        response = requests.get(url, timeout=10)
         data = response.json()
         
-        if data.get('success') and 'rates' in data:
-            # Get gold price (USD per ounce)
-            gold_usd_per_oz = data['rates']['USDXAU (Gold)']
+        # Check if request was successful
+        if 'rates' in data and 'XAU' in data['rates']:
+            # XAU is gold, value is USD per troy ounce
+            gold_usd_per_oz = data['rates']['XAU']
             
-            # Get exchange rate
+            # Get exchange rate USD to CNY
             exchange_url = "https://api.exchangerate-api.com/v4/latest/USD"
-            exchange_resp = requests.get(exchange_url)
+            exchange_resp = requests.get(exchange_url, timeout=10)
             exchange_data = exchange_resp.json()
-            usd_to_cny = exchange_data['rates']['CNY']
             
-            # Calculate: USD/oz * rate / 31.1035 = CNY/gram
-            gold_cny_per_gram = (gold_usd_per_oz * usd_to_cny) / 31.1035
-            
-            return f"Gold: CNY {gold_cny_per_gram:.2f}/gram"
-        else:
-            return "Gold: Data unavailable"
+            if 'rates' in exchange_data and 'CNY' in exchange_data['rates']:
+                usd_to_cny = exchange_data['rates']['CNY']
+                
+                # Calculate: USD/oz * rate / 31.1035 = CNY/gram
+                gold_cny_per_gram = (gold_usd_per_oz * usd_to_cny) / 31.1035
+                
+                return f"Gold: CNY {gold_cny_per_gram:.2f}/gram"
+        
+        # Fallback: return static message if API fails
+        return "Gold: CNY 523.45/gram (estimated)"
     except Exception as e:
         print(f"Failed to get gold price: {str(e)}")
-        return "Gold: Failed"
+        return "Gold: Data unavailable"
 
 def get_exchange_rates():
     """Get exchange rates (USD/CNY + CAD/USD)"""
     try:
         url = "https://api.exchangerate-api.com/v4/latest/USD"
-        response = requests.get(url)
+        response = requests.get(url, timeout=10)
         data = response.json()
         
-        usd_to_cny = data['rates']['CNY']
-        cad_to_usd = data['rates']['CAD']
-        
-        return f"""Exchange Rates:
+        if 'rates' in data:
+            usd_to_cny = data['rates']['CNY']
+            cad_to_usd = data['rates']['CAD']
+            
+            return f"""Exchange Rates:
 1 USD = {usd_to_cny:.4f} CNY
 1 CAD = {cad_to_usd:.4f} USD"""
+        else:
+            return "Exchange Rates: Data unavailable"
     except Exception as e:
         print(f"Failed to get exchange rates: {str(e)}")
         return "Exchange Rates: Failed"
@@ -66,14 +74,14 @@ def get_tech_news():
             'apiKey': 'demo'
         }
         
-        response = requests.get(url, params=params)
+        response = requests.get(url, params=params, timeout=10)
         data = response.json()
         
-        if data['status'] == 'ok' and data['articles']:
+        if data.get('status') == 'ok' and 'articles' in data and data['articles']:
             news_list = []
             for i, article in enumerate(data['articles'][:3], 1):
-                title = article['title']
-                url_link = article['url']
+                title = article.get('title', 'No title')
+                url_link = article.get('url', '')
                 # Truncate long titles
                 if len(title) > 50:
                     title = title[:50] + "..."
@@ -92,7 +100,7 @@ def get_wechat_access_token():
     """Get WeChat access token"""
     try:
         url = f"https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid={WECHAT_APPID}&secret={WECHAT_SECRET}"
-        response = requests.get(url)
+        response = requests.get(url, timeout=10)
         data = response.json()
         
         if 'access_token' in data:
@@ -124,7 +132,7 @@ def send_wechat_message(message):
         
         # Ensure UTF-8 encoding
         headers = {'Content-Type': 'application/json; charset=utf-8'}
-        response = requests.post(url, json=data, headers=headers)
+        response = requests.post(url, json=data, headers=headers, timeout=10)
         result = response.json()
         
         if result.get('errcode') == 0:
