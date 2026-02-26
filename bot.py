@@ -5,7 +5,7 @@ from datetime import datetime
 # ========== 配置区域 ==========
 # 请在这里填入你的真实信息
 WECHAT_APPID = "wxfa348848aa8f4475"  # 替换成你的appID
-WECHAT_SECRET = "a782181ac5833bd2cf483856c8a9cfde6"  # 替换成你的appsecret
+WECHAT_SECRET = "a782181ac5833bd2cf483856c8a9cfde"  # 替换成你的appsecret
 WECHAT_USERID = "oHh0G3Y5LKos7qEDyK-okZfGkpI0"  # 替换成你的WeChatID
 
 # ========== 数据获取函数 ==========
