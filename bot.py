@@ -10,18 +10,22 @@ WECHAT_USERID = "oHh0G3Y5LKos7qEDyK-okZfGkpI0"  # Replace with your WeChatID
 # ========== Data Fetching Functions ==========
 
 def get_gold_price():
-    """Get gold price in CNY per gram from Shanghai Gold Exchange"""
+    """Get gold price in CNY per gram using MetalpriceAPI"""
     try:
-        # Using sge.com.cn (Shanghai Gold Exchange) - Free, authoritative, CNY/gram directly
-        url = "https://www.sge.com.cn/sjzx/jzx?category=CNY&limit=1"
+        # MetalpriceAPI (Free tier available, no API key required for basic usage)
+        url = "https://api.metalpriceapi.com/v1/latest?base=USD"
         response = requests.get(url, timeout=10)
         data = response.json()
         
-        # Check if data is available
-        if 'list' in data and len(data['list']) > 0:
-            # Get latest gold price (CNY/gram)
-            gold_data = data['list'][0]
-            gold_cny_per_gram = gold_data['close']
+        if data.get('success') and 'rates' in data:
+            # Get gold price in USD per ounce
+            gold_usd_per_oz = data['rates']['USDXAU (Gold)']
+            
+            # Get USD to CNY exchange rate from the same API
+            usd_to_cny = data['rates']['CNY']
+            
+            # Convert to CNY per gram (1 ounce = 31.1035 grams)
+            gold_cny_per_gram = (gold_usd_per_oz * usd_to_cny) / 31.1035
             
             return f"Gold: CNY {gold_cny_per_gram:.2f}/gram"
         else:
@@ -49,40 +53,6 @@ def get_exchange_rates():
     except Exception as e:
         print(f"Failed to get exchange rates: {str(e)}")
         return "Exchange Rates: Failed"
-
-def get_tech_news():
-    """Get tech finance news (3 items)"""
-    try:
-        url = "https://newsapi.org/v2/everything"
-        params = {
-            'q': 'technology finance',
-            'language': 'en',
-            'sortBy': 'publishedAt',
-            'pageSize': 3,
-            'apiKey': 'demo'
-        }
-        
-        response = requests.get(url, params=params, timeout=10)
-        data = response.json()
-        
-        if data.get('status') == 'ok' and 'articles' in data and data['articles']:
-            news_list = []
-            for i, article in enumerate(data['articles'][:3], 1):
-                title = article.get('title', 'No title')
-                url_link = article.get('url', '')
-                # Truncate long titles
-                if len(title) > 50:
-                    title = title[:50] + "..."
-                news_list.append(f"{i}. {title}\n   {url_link}")
-            
-            news_text = "\n\n".join(news_list)
-        else:
-            news_text = "No recent news available"
-            
-        return f"Tech Finance News:\n{news_text}"
-    except Exception as e:
-        print(f"Failed to get news: {str(e)}")
-        return "Tech Finance News: Failed"
 
 def get_wechat_access_token():
     """Get WeChat access token"""
@@ -145,8 +115,6 @@ def main():
 {get_gold_price()}
 
 {get_exchange_rates()}
-
-{get_tech_news()}
 
 ---
 Auto Update | Mon/Wed/Fri 8:30 AM"""
