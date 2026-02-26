@@ -10,34 +10,22 @@ WECHAT_USERID = "oHh0G3Y5LKos7qEDyK-okZfGkpI0"  # Replace with your WeChatID
 # ========== Data Fetching Functions ==========
 
 def get_gold_price():
-    """Get gold price in CNY per gram"""
+    """Get gold price in CNY per gram from Shanghai Gold Exchange"""
     try:
-        # Using Metals-API (free, no API key required)
-        # This API returns rates relative to USD
-        url = "https://api.metals.dev/v1/latest?api_key=test-api-key-12345"
+        # Using sge.com.cn (Shanghai Gold Exchange) - Free, authoritative, CNY/gram directly
+        url = "https://www.sge.com.cn/sjzx/jzx?category=CNY&limit=1"
         response = requests.get(url, timeout=10)
         data = response.json()
         
-        # Check if request was successful
-        if 'rates' in data and 'XAU' in data['rates']:
-            # XAU is gold, value is USD per troy ounce
-            gold_usd_per_oz = data['rates']['XAU']
+        # Check if data is available
+        if 'list' in data and len(data['list']) > 0:
+            # Get latest gold price (CNY/gram)
+            gold_data = data['list'][0]
+            gold_cny_per_gram = gold_data['close']
             
-            # Get exchange rate USD to CNY
-            exchange_url = "https://api.exchangerate-api.com/v4/latest/USD"
-            exchange_resp = requests.get(exchange_url, timeout=10)
-            exchange_data = exchange_resp.json()
-            
-            if 'rates' in exchange_data and 'CNY' in exchange_data['rates']:
-                usd_to_cny = exchange_data['rates']['CNY']
-                
-                # Calculate: USD/oz * rate / 31.1035 = CNY/gram
-                gold_cny_per_gram = (gold_usd_per_oz * usd_to_cny) / 31.1035
-                
-                return f"Gold: CNY {gold_cny_per_gram:.2f}/gram"
-        
-        # Fallback: return static message if API fails
-        return "Gold: CNY 523.45/gram (estimated)"
+            return f"Gold: CNY {gold_cny_per_gram:.2f}/gram"
+        else:
+            return "Gold: Data unavailable"
     except Exception as e:
         print(f"Failed to get gold price: {str(e)}")
         return "Gold: Data unavailable"
@@ -152,7 +140,7 @@ def main():
     # Compose message content (English only, no emoji)
     today = datetime.now().strftime("%Y-%m-%d")
     
-    message = f"""【{today} Finance Brief】
+    message = f"""[{today} Finance Brief]
 
 {get_gold_price()}
 
