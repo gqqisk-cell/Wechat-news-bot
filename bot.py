@@ -3,9 +3,9 @@ import json
 from datetime import datetime
 
 # ========== 配置区域 ==========
-WECHAT_APPID = "你的appID"
-WECHAT_SECRET = "你的appsecret"  
-WECHAT_USERID = "你的WeChatID"
+WECHAT_APPID = "wxfa348848aa8f4475"
+WECHAT_SECRET = "a782181ac5833bd2cf483856c8a9cfde"  
+WECHAT_USERID = "oHh0G3Y5LKos7qEDyK-okZfGkpI0"
 
 # ========== 数据获取函数 ==========
 
